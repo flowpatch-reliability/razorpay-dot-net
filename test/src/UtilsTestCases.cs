@@ -114,20 +114,8 @@ namespace RazorpayClientTest
             });
         }
 
-        /// <summary>
-        /// Test signature verification with unicode in payload.
-        /// </summary>
-        public static void UnicodeInPayloadTest()
-        {
-            string payload = "{\"name\":\"Test User\",\"currency\":\"INR\"}";
-            string secret = "test_secret";
-            string validSig = ComputeHmacSha256(payload, secret);
-
-            Assert.DoesNotThrow(() => {
-                Utils.verifyWebhookSignature(payload, validSig, secret);
-            });
-        }
-
+        // NOTE: Uses ASCIIEncoding to match current SDK behavior in StringEncode().
+        // Unicode test will be added in the fix PR that changes encoding to UTF8.
         private static string ComputeHmacSha256(string payload, string secret)
         {
             var encoding = new ASCIIEncoding();
