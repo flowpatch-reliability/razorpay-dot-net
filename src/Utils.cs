@@ -67,14 +67,67 @@ namespace Razorpay.Api
 
         private static void verifySignature(string payload, string expectedSignature, string secret)
         {
-            string actualSignature = getActualSignature(payload, secret);
+            byte[] actualSignatureBytes = getActualSignatureBytes(payload, secret);
 
-            bool verified = actualSignature.Equals(expectedSignature);
+            // Decode expected signature from hex
+            byte[] expectedSignatureBytes;
+            try
+            {
+                expectedSignatureBytes = HexStringToByteArray(expectedSignature);
+            }
+            catch
+            {
+                throw new SignatureVerificationError("Invalid signature passed");
+            }
+
+            // Use constant-time comparison to prevent timing attacks
+            bool verified = CryptographicEquals(actualSignatureBytes, expectedSignatureBytes);
 
             if (verified == false)
             {
                 throw new SignatureVerificationError("Invalid signature passed");
             }
+        }
+
+        /// <summary>
+        /// Constant-time byte array comparison to prevent timing attacks.
+        /// </summary>
+        private static bool CryptographicEquals(byte[] a, byte[] b)
+        {
+            if (a == null || b == null || a.Length != b.Length)
+            {
+                return false;
+            }
+
+            int result = 0;
+            for (int i = 0; i < a.Length; i++)
+            {
+                result |= a[i] ^ b[i];
+            }
+            return result == 0;
+        }
+
+        private static byte[] HexStringToByteArray(string hex)
+        {
+            if (string.IsNullOrEmpty(hex) || hex.Length % 2 != 0)
+            {
+                throw new ArgumentException("Invalid hex string");
+            }
+
+            byte[] bytes = new byte[hex.Length / 2];
+            for (int i = 0; i < bytes.Length; i++)
+            {
+                bytes[i] = Convert.ToByte(hex.Substring(i * 2, 2), 16);
+            }
+            return bytes;
+        }
+
+        private static byte[] getActualSignatureBytes(string payload, string secret)
+        {
+            byte[] secretBytes = StringEncode(secret);
+            HMACSHA256 hashHmac = new HMACSHA256(secretBytes);
+            var bytes = StringEncode(payload);
+            return hashHmac.ComputeHash(bytes);
         }
 
         private static string getActualSignature(string payload, string secret)
