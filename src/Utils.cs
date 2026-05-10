@@ -124,21 +124,10 @@ namespace Razorpay.Api
 
         private static byte[] getActualSignatureBytes(string payload, string secret)
         {
-            byte[] secretBytes = StringEncode(secret);
+            byte[] secretBytes = Encoding.UTF8.GetBytes(secret);
             HMACSHA256 hashHmac = new HMACSHA256(secretBytes);
-            var bytes = StringEncode(payload);
-            return hashHmac.ComputeHash(bytes);
-        }
-
-        private static string getActualSignature(string payload, string secret)
-        {
-            byte[] secretBytes = StringEncode(secret);
-
-            HMACSHA256 hashHmac = new HMACSHA256(secretBytes);
-
-            var bytes = StringEncode(payload);
-
-            return HashEncode(hashHmac.ComputeHash(bytes));
+            byte[] payloadBytes = Encoding.UTF8.GetBytes(payload);
+            return hashHmac.ComputeHash(payloadBytes);
         }
         
         public static string GenerateOnboardingSignature(Dictionary<string, object> attributes, string secret)
@@ -183,15 +172,5 @@ namespace Razorpay.Api
             return hexBuilder.ToString();
         }
 
-        private static byte[] StringEncode(string text)
-        {
-            var encoding = new ASCIIEncoding();
-            return encoding.GetBytes(text);
-        }
-
-        private static string HashEncode(byte[] hash)
-        {
-            return BitConverter.ToString(hash).Replace("-", "").ToLower();
-        }
     }
 }
