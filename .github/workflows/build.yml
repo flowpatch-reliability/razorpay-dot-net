@@ -10,27 +10,47 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-windows:
-    name: Build on Windows (Primary)
-    runs-on: windows-latest  # Native Windows for .NET Framework safety
-    
+  test:
+    name: Run Unit Tests
+    runs-on: ubuntu-latest
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      
+
+    - name: Setup .NET SDK
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+
+    - name: Restore dependencies
+      run: dotnet restore test/Razorpay.Tests/Razorpay.Tests.csproj
+
+    - name: Run tests
+      run: dotnet test test/Razorpay.Tests/Razorpay.Tests.csproj --configuration Release --verbosity normal
+
+  build-windows:
+    name: Build on Windows (Primary)
+    runs-on: windows-latest
+    needs: test
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
     - name: Setup .NET SDK
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: |
           6.0.x
           8.0.x
-        
+
     - name: Setup MSBuild
       uses: microsoft/setup-msbuild@v2
-        
+
     - name: Restore dependencies
       run: dotnet restore Razorpay.sln
-      
+
     - name: Build solution (Native Windows)
       run: dotnet build Razorpay.sln --configuration Release --no-restore
       
