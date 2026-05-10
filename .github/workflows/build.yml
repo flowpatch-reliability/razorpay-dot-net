@@ -38,7 +38,7 @@ jobs:
     - name: Verify all target frameworks
       run: |
         Write-Host "Verifying .NET Framework builds on native Windows..."
-        $frameworks = @("net48", "netstandard2.0", "net8.0", "net9.0", "net10.0")
+        $frameworks = @("net47", "net48", "netstandard2.0", "net8.0", "net9.0", "net10.0")
         $allBuilt = $true
 
         foreach ($fw in $frameworks) {
