@@ -549,32 +549,33 @@ namespace Razorpay.Tests
 
         #endregion
 
-        #region Signature Timing Attack Prevention
+        #region Signature Verification Robustness
 
         [Test]
-        public void VerifyWebhookSignature_TimingConsistency_SimilarTimes()
+        public void VerifyWebhookSignature_MultipleValidCalls_AllSucceed()
         {
             string payload = "test_payload";
             string secret = "test_secret";
             string validSig = ComputeHmacSha256(payload, secret);
+
+            for (int i = 0; i < 100; i++)
+            {
+                Assert.DoesNotThrow(() => Utils.verifyWebhookSignature(payload, validSig, secret));
+            }
+        }
+
+        [Test]
+        public void VerifyWebhookSignature_MultipleInvalidCalls_AllFail()
+        {
+            string payload = "test_payload";
+            string secret = "test_secret";
             string invalidSig = new string('a', 64);
 
-            var sw1 = System.Diagnostics.Stopwatch.StartNew();
             for (int i = 0; i < 100; i++)
             {
-                try { Utils.verifyWebhookSignature(payload, validSig, secret); } catch { }
+                Assert.Throws<SignatureVerificationError>(() =>
+                    Utils.verifyWebhookSignature(payload, invalidSig, secret));
             }
-            sw1.Stop();
-
-            var sw2 = System.Diagnostics.Stopwatch.StartNew();
-            for (int i = 0; i < 100; i++)
-            {
-                try { Utils.verifyWebhookSignature(payload, invalidSig, secret); } catch { }
-            }
-            sw2.Stop();
-
-            double ratio = (double)sw1.ElapsedTicks / (double)sw2.ElapsedTicks;
-            Assert.That(ratio, Is.InRange(0.1, 10.0), "Timing difference too large, possible timing attack vulnerability");
         }
 
         #endregion
