@@ -9,9 +9,6 @@ on:
     branches: [ master ]
   workflow_dispatch:
 
-permissions:
-  contents: read
-
 jobs:
   build-windows:
     name: Build on Windows (Primary)
@@ -89,8 +86,9 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/v') # Only publish on version tags like v3.3.0
     
     steps:
-    # Start PMG in server mode
-    - uses: safedep/pmg@v1
+    - name: Setup PMG proxy
+      id: pmg-setup
+      uses: safedep/pmg@v1
       with:
         server-mode: true
         api-key: ${{ secrets.PMG_PUBLIC_REPOS_TOKEN }}
@@ -127,7 +125,11 @@ jobs:
       env:
         NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
 
-    # Enforce the result and flush events
-    - name: Stop PMG proxy
+    - name: Enforce PMG policy
       if: always()
-      run: pmg proxy stop --fail-on-violation
+      run: |
+        if [ "${{ steps.pmg-setup.outcome }}" = "success" ]; then
+          pmg proxy stop --fail-on-violation
+        else
+          pmg proxy stop || true
+        fi
